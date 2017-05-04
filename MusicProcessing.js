@@ -6,7 +6,7 @@ var Music = (function (){
 	}
 	/*Calcula los tiempos en los que ocurren los eventos basados en notacion
 	musical. Retorna arreglo de triggers*/
-	function beatstringToEvents (pattern, subd, bpm){
+	function eventsFromBeatstrings (pattern, subd, bpm){
 		//pattern = string of triggers. x note, . silence
 		//subd = subdivision (1/4, 1/8, etc)
 		var timeArr = []; //array to store the values from calculation
@@ -87,7 +87,7 @@ var Music = (function (){
 	//Retorna arreglo de objetos 
 	//con las parejas tiempo,valor a partir de triggers y sus envolventes
 	//Normalizado a 1.0
-	function createGraph (triggers, envs){
+	function createGraphData (triggers, envs){
 		var keyValues = {
 			times: [],
 			values: []
@@ -101,7 +101,7 @@ var Music = (function (){
 		for(var i = 0; i < triggers.length - 1; i++){
 			//Set current time first, but true value depends on overriding
 			keyValues.times.push(triggers[i]);
-			keyValues.values.push(lastValue.value > 0? lastValue.value:0.0);
+			keyValues.values.push(lastValue.value > 0 && lastValue.value < 0.99? lastValue.value:0.0);
 
 			lastValue.time = keyValues.times[keyValues.times.length-1];
 			lastValue.value = keyValues.values[keyValues.values.length-1];
@@ -118,8 +118,21 @@ var Music = (function (){
 					lastValue.value = keyValues.values[keyValues.values.length-1];
 				}
 				else{
-					lastValue.value = lerp(nextTrig, envs[i].times[j], envs[i].values[j], lastValue.time, lastValue.value);
-					lastValue.time = nextTrig;
+					var valueAtTriggerCrossing = lerp(nextTrig, 
+													envs[i].times[j], envs[i].values[j],
+													lastValue.time, lastValue.value);
+													
+					if(valueAtTriggerCrossing > 0.99){
+						lastValue.value = valueAtTriggerCrossing;
+						lastValue.time = nextTrig - 0.01;
+
+						keyValues.times.push(lastValue.time);
+						keyValues.values.push(lastValue.value);
+					}
+					else {
+						lastValue.value = valueAtTriggerCrossing;
+						lastValue.time = nextTrig;
+					}
 					break;
 				}
 			}
@@ -129,7 +142,7 @@ var Music = (function (){
 
 		var lastindex = triggers.length-1;
 		keyValues.times.push(triggers[lastindex]);
-		keyValues.values.push(lastValue.value > 0? lastValue.value:0.0);
+		keyValues.values.push(lastValue.value > 0 && lastValue.value < 0.99? lastValue.value:0.0);
 
 		lastValue.time = keyValues.times[keyValues.times.length-1];
 		lastValue.value = keyValues.values[keyValues.values.length-1];
@@ -143,14 +156,21 @@ var Music = (function (){
 		return keyValues;
 	}
 
+	function createGraphFromBeatstring(beatstring, subdivision, bpm, envelopeType, timeConstants){
+		var triggers = eventsFromBeatstrings(beatstring,subdivision, bpm);
+		var envelopes = createTriggerEnvelopeArray(triggers, envelopeType, timeConstants);
+		return createGraphData(triggers,envelopes);
+	}
+
 	
 
 	return {
 		subdivisionToSeconds: subdivisionToSeconds,
-		beatstringToEvents: beatstringToEvents,
+		eventsFromBeatstrings: eventsFromBeatstrings,
 		createEnvelope: createEnvelope,
 		createTriggerEnvelopeArray: createTriggerEnvelopeArray,
-		createGraph: createGraph
+		createGraphData: createGraphData,
+		createGraphFromBeatstring: createGraphFromBeatstring
 
 	};
 
