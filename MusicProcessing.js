@@ -162,6 +162,28 @@ var Music = (function (){
 		return createGraphData(triggers,envelopes);
 	}
 
+	function randomBeatstring(length, hitProbability){
+		var beatString = '';
+		for(var i = 0; i < length; i++){
+			if(Math.random() < hitProbability) beatString += 'x';
+			else beatString += '.';
+		}
+
+		beatString = beatString.length === 0? '.':beatString;
+
+		return beatString;
+
+	}
+
+	function invertBeatstring(beatstring){
+		var newBeatstring = '';
+		for (var i = 0; i < beatstring.length; i++){
+			newBeatstring += beatstring.charAt(i) === 'x'? '.':'x';
+		}
+
+		return newBeatstring;
+	}
+
 	
 
 	return {
@@ -170,8 +192,9 @@ var Music = (function (){
 		createEnvelope: createEnvelope,
 		createTriggerEnvelopeArray: createTriggerEnvelopeArray,
 		createGraphData: createGraphData,
-		createGraphFromBeatstring: createGraphFromBeatstring
-
+		createGraphFromBeatstring: createGraphFromBeatstring,
+		randomBeatstring: randomBeatstring,
+		invertBeatstring: invertBeatstring
 	};
 
 })();
